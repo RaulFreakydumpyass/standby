@@ -70,6 +70,10 @@ public final class BgStore {
      * smaller bitmap: we only sub-sample while the decoded size is still >= what the screen needs.
      */
     public static Bitmap decode(File f, int rw, int rh, boolean fit) {
+        return decode(f, rw, rh, fit, 0);
+    }
+
+    public static Bitmap decode(File f, int rw, int rh, boolean fit, int blurPct) {
         try {
             int orient = orientation(f);
             boolean swap = orient == 5 || orient == 6 || orient == 7 || orient == 8;
@@ -113,9 +117,53 @@ public final class BgStore {
                 Bitmap r = Bitmap.createBitmap(b, 0, 0, b.getWidth(), b.getHeight(), m, true);
                 if (r != b) b = r;
             }
-            return b;
+            return blurPct > 0 ? blur(b, blurPct) : b;
         } catch (Throwable t) {
             return null;
+        }
+    }
+
+    /**
+     * Cheap, smooth blur for slow tablets: shrink the picture, box-blur the small copy twice, and let the
+     * GPU scale it back up with filtering (a blurred picture needs no extra pixels). pct = 1..100.
+     */
+    static Bitmap blur(Bitmap src, int pct) {
+        float f = 1f / (1f + pct / 8f);
+        int w = Math.max(8, Math.round(src.getWidth() * f));
+        int h = Math.max(8, Math.round(src.getHeight() * f));
+        Bitmap sm = Bitmap.createScaledBitmap(src, w, h, true);
+        int r = Math.max(1, Math.round(pct / 100f * 6f));
+        int[] px = new int[w * h];
+        sm.getPixels(px, 0, w, 0, 0, w, h);
+        for (int i = 0; i < 2; i++) {
+            boxPass(px, w, h, r, true);
+            boxPass(px, w, h, r, false);
+        }
+        Bitmap out = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
+        out.setPixels(px, 0, w, 0, 0, w, h);
+        return out;
+    }
+
+    private static int cl(int v, int len) { return v < 0 ? 0 : (v >= len ? len - 1 : v); }
+
+    private static void boxPass(int[] px, int w, int h, int r, boolean horiz) {
+        int len = horiz ? w : h, lines = horiz ? h : w, n = 2 * r + 1;
+        int[] line = new int[len], outl = new int[len];
+        for (int l = 0; l < lines; l++) {
+            for (int i = 0; i < len; i++) line[i] = horiz ? px[l * w + i] : px[i * w + l];
+            int sr = 0, sg = 0, sb = 0;
+            for (int k = -r; k <= r; k++) {
+                int c = line[cl(k, len)];
+                sr += (c >> 16) & 0xFF; sg += (c >> 8) & 0xFF; sb += c & 0xFF;
+            }
+            for (int i = 0; i < len; i++) {
+                outl[i] = 0xFF000000 | ((sr / n) << 16) | ((sg / n) << 8) | (sb / n);
+                int add = line[cl(i + r + 1, len)], rem = line[cl(i - r, len)];
+                sr += ((add >> 16) & 0xFF) - ((rem >> 16) & 0xFF);
+                sg += ((add >> 8) & 0xFF) - ((rem >> 8) & 0xFF);
+                sb += (add & 0xFF) - (rem & 0xFF);
+            }
+            for (int i = 0; i < len; i++) { if (horiz) px[l * w + i] = outl[i]; else px[i * w + l] = outl[i]; }
         }
     }
 }
