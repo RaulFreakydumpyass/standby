@@ -1,4 +1,4 @@
-# StandBy clock for Android (Lenovo Tab 2 X30L, Android 9)
+# StandBy clock for Android (optimized for Android 9)
 
 iPhone StandBy-style clock: vertical clock in portrait, horizontal clock in landscape.
 
