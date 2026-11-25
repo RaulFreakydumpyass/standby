@@ -282,6 +282,7 @@ public class SettingsActivity extends Activity {
         choice(c, "Slideshow", new String[]{"Off (use selected picture)", "Every 10 seconds", "Every 30 seconds",
                 "Every minute", "Every 5 minutes", "Every 15 minutes"}, "slide");
         sw(c, "Fit whole picture", "Off = fill the screen (crops edges)", "fit");
+        slider(c, "Blur background", "blur", 0, 100, "%");
         slider(c, "Darken background", "dim", 0, 90, "%");
 
         // ---- screen
