@@ -52,6 +52,7 @@ public class StandbyView extends View {
     private final Rect tb = new Rect();
 
     // settings snapshot
+    private int blurPct;
     private int style, dateFmt, colorIdx, accentIdx, sizePct, pos, dimPct, slideIdx, nightMode, nightStart, nightEnd;
     private boolean h24, showSec, blink, bold, glow, showDate, showBatt, showAlarm, bgOn, fit, shift, chime;
     private String customText = "";
@@ -145,6 +146,7 @@ public class StandbyView extends View {
         bgOn = prefs.b("bgOn");
         fit = prefs.b("fit");
         dimPct = clamp(prefs.i("dim"), 0, 90);
+        blurPct = clamp(prefs.i("blur"), 0, 100);
         slideIdx = clamp(prefs.i("slide"), 0, SLIDE_SECS.length - 1);
         shift = prefs.b("shift");
         chime = prefs.b("chime");
@@ -242,7 +244,7 @@ public class StandbyView extends View {
     // ------------------------------------------------------------------ background loading
 
     private String keyFor(File f) {
-        return f.getPath() + "|" + f.lastModified() + "|" + getWidth() + "x" + getHeight() + "|" + fit;
+        return f.getPath() + "|" + f.lastModified() + "|" + getWidth() + "x" + getHeight() + "|" + fit + "|" + blurPct;
     }
 
     private void reloadBackground() {
@@ -266,9 +268,10 @@ public class StandbyView extends View {
         final int gen = ++bgGen;
         final int w = getWidth(), h = getHeight();
         final boolean fitMode = fit;
+        final int blurP = blurPct;
         try {
             loader.execute(() -> {
-                final Bitmap bm = BgStore.decode(f, w, h, fitMode);
+                final Bitmap bm = BgStore.decode(f, w, h, fitMode, blurP);
                 post(() -> {
                     if (gen != bgGen || bm == null) return;
                     loadedKey = key;
