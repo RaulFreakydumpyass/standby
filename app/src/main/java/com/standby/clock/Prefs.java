@@ -39,6 +39,7 @@ public class Prefs {
         DEF.put("slide", 2);          // index into StandbyView.SLIDE_SECS
         DEF.put("fit", false);
         DEF.put("dim", 30);
+        DEF.put("blur", 0);           // 0..100 background blur
         // screen
         DEF.put("keepOn", true);
         DEF.put("lockscreen", false);
